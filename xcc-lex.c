@@ -13,7 +13,7 @@
 #define MAX_TOKENS 10000
 struct token {
     int kind;
-    int offset_begin; 
+    int offset_begin;
     int offset_end;
     char *lexeme;
 };
@@ -43,7 +43,7 @@ enum token_kind {
 
 char *token_kind_string[] = {
     "UNUSED", "ID", "INT", "CHAR", "STRING",
-    "char", "else", "goto", "if", "int", 
+    "char", "else", "goto", "if", "int",
     "return", "void", "while", "==", "&&", "||", "long",
     "COMMENT", "WHITESPACE",  // デバッグ用
     [';'] = ";", [':'] = ":", ['{'] = "{", ['}'] = "}", [','] = ",",
@@ -80,20 +80,20 @@ static char *escape_json (char *s1)
     while (1) {
         char c = *s1++;
         switch (c) {
-        case '\0':
-            p [0] = c;
-            goto loop_exit;
-        case '\"':
-        case '\\':
-        case '/':
-            p [0] = '\\';
-            p [1] = c;
-            p += 2;
-            break;
-        default:
-            p [0] = c;
-            p++;
-            break;
+            case '\0':
+                p [0] = c;
+                goto loop_exit;
+            case '\"':
+            case '\\':
+            case '/':
+                p [0] = '\\';
+                p [1] = c;
+                p += 2;
+                break;
+            default:
+                p [0] = c;
+                p++;
+                break;
         }
     }
 loop_exit:
@@ -111,8 +111,8 @@ static void print_token (void)
 static void parse_error (void)
 {
     fprintf (stderr, "parse error (%d-%d): %s (%s)\n",
-             token_p->offset_begin, token_p->offset_end,
-             token_kind_string [token_p->kind], token_p->lexeme);
+            token_p->offset_begin, token_p->offset_end,
+            token_kind_string [token_p->kind], token_p->lexeme);
     exit (1);
 }
 
@@ -161,7 +161,7 @@ static char *map_file (char *filename)
 
     fstat (fd, &sbuf);
     ptr = mmap (NULL, sbuf.st_size + 1, // +1 for '\0'
-                PROT_READ|PROT_WRITE, MAP_PRIVATE, fd, 0);
+            PROT_READ|PROT_WRITE, MAP_PRIVATE, fd, 0);
     if (ptr == MAP_FAILED) {
         perror ("mmap");
         exit (1);
@@ -176,9 +176,9 @@ static void my_regcomp (regex_t *regex_p, char *pattern)
     int ret = regcomp (regex_p, pattern, REG_EXTENDED);
 
     if (ret != 0) {
-	regerror (ret, regex_p, buf, sizeof (buf));
-	fprintf (stderr, "regcomp: %s\n", buf);
-	exit (1);
+        regerror (ret, regex_p, buf, sizeof (buf));
+        fprintf (stderr, "regcomp: %s\n", buf);
+        exit (1);
     }
 }
 
@@ -188,7 +188,7 @@ static int my_regexec (regex_t *regex_p, char *str, regmatch_t *regmatch_p)
 #if 0
     if (ret == 0) {
         fprintf (stderr, "matched: |%lld, %lld: %.40s|\n",
-                 regmatch_p->rm_so, regmatch_p->rm_eo, str+regmatch_p->rm_so);
+                regmatch_p->rm_so, regmatch_p->rm_eo, str+regmatch_p->rm_so);
     } else {
         fprintf (stderr, "unmatched\n");
     }
@@ -362,24 +362,24 @@ static void create_tokens (char *ptr)
                 off = set_token_int (ptr, 0, 2, TK_OP_OR, off);
             else {
                 switch (ptr [off]) {
-                case ';': off = set_token_int (ptr, 0, 1, ';', off); break;
-                case ':': off = set_token_int (ptr, 0, 1, ':', off); break;
-                case '{': off = set_token_int (ptr, 0, 1, '{', off); break;
-                case '}': off = set_token_int (ptr, 0, 1, '}', off); break;
-                case ',': off = set_token_int (ptr, 0, 1, ',', off); break;
-                case '=': off = set_token_int (ptr, 0, 1, '=', off); break;
-                case '(': off = set_token_int (ptr, 0, 1, '(', off); break;
-                case ')': off = set_token_int (ptr, 0, 1, ')', off); break;
-                case '&': off = set_token_int (ptr, 0, 1, '&', off); break;
-                case '!': off = set_token_int (ptr, 0, 1, '!', off); break;
-                case '-': off = set_token_int (ptr, 0, 1, '-', off); break;
-                case '+': off = set_token_int (ptr, 0, 1, '+', off); break;
-                case '*': off = set_token_int (ptr, 0, 1, '*', off); break;
-                case '/': off = set_token_int (ptr, 0, 1, '/', off); break;
-                case '<': off = set_token_int (ptr, 0, 1, '<', off); break;
-                default:
-                    printf ("unexpected token (%d): %s\n", off, ptr + off);
-                    assert (0);
+                    case ';': off = set_token_int (ptr, 0, 1, ';', off); break;
+                    case ':': off = set_token_int (ptr, 0, 1, ':', off); break;
+                    case '{': off = set_token_int (ptr, 0, 1, '{', off); break;
+                    case '}': off = set_token_int (ptr, 0, 1, '}', off); break;
+                    case ',': off = set_token_int (ptr, 0, 1, ',', off); break;
+                    case '=': off = set_token_int (ptr, 0, 1, '=', off); break;
+                    case '(': off = set_token_int (ptr, 0, 1, '(', off); break;
+                    case ')': off = set_token_int (ptr, 0, 1, ')', off); break;
+                    case '&': off = set_token_int (ptr, 0, 1, '&', off); break;
+                    case '!': off = set_token_int (ptr, 0, 1, '!', off); break;
+                    case '-': off = set_token_int (ptr, 0, 1, '-', off); break;
+                    case '+': off = set_token_int (ptr, 0, 1, '+', off); break;
+                    case '*': off = set_token_int (ptr, 0, 1, '*', off); break;
+                    case '/': off = set_token_int (ptr, 0, 1, '/', off); break;
+                    case '<': off = set_token_int (ptr, 0, 1, '<', off); break;
+                    default:
+                              printf ("unexpected token (%d): %s\n", off, ptr + off);
+                              assert(0);
                 }
             }
         }

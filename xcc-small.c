@@ -26,6 +26,12 @@ static void show_AST (struct AST *ast, int depth);
 static void unparse_AST (struct AST *ast, int depth);
 
 static struct AST* parse_translation_unit (void);
+static struct AST* parse_type_specifier (void);
+static struct AST* parse_declarator (void);
+static struct AST* parse_compound_statement (void);
+static struct AST* parse_exp (void);
+static struct AST* parse_primary (void);
+static struct AST* parse_statement (void);
 
 static char* map_file (char *filename);
 static void my_regcomp (regex_t *regex_p, char *pattern);
@@ -245,27 +251,245 @@ parse_translation_unit (void)
         switch (lookahead (1)) {
             case TK_KW_INT: case TK_KW_CHAR: case TK_KW_VOID:
                 // parse_type_specifier などのコードを書く
-                // ast1 = parse_type_specifier ();
-                // ast2 = parse_declarator ();
+                ast1 = parse_type_specifier ();
+                ast2 = parse_declarator ();
                 switch (lookahead (1)) {
                     case ';':
                         consume_token (';');
                         ast3 = create_AST (";", 0);
                         break;
                     case '{':
-                        // ast3 = parse_compound_statement ();
+                        ast3 = parse_compound_statement ();
                         break;
                     default:
                         parse_error ();
                         break;
                 }
-                // ast = add_AST (ast, 3, ast1, ast2, ast3);
+                ast = add_AST (ast, 3, ast1, ast2, ast3);
                 break;
             default:
-                goto loop_exit;
+                goto translation_unit_loop_exit;
         }
     }
-loop_exit:
+translation_unit_loop_exit:
+    return ast;
+}
+
+
+// type_specifier: "void" | "char" | "int" | "long" ;
+    static struct AST*
+parse_type_specifier (void) {
+    struct AST *ast, *ast1;
+    ast = create_AST ("type_specifier", 0);
+    switch (lookahead (1)) {
+        case TK_KW_VOID:
+            ast1 = create_leaf ("void", "void");
+            consume_token (TK_KW_VOID);
+            break;
+        case TK_KW_CHAR:
+            ast1 = create_leaf ("char", "char");
+            consume_token (TK_KW_CHAR);
+            break;
+        case TK_KW_INT:
+            ast1 = create_leaf ("int", "int");
+            consume_token (TK_KW_INT);
+            break;
+        case TK_KW_LONG:
+            ast1 = create_leaf ("long", "long");
+            consume_token (TK_KW_LONG);
+            break;
+        default:
+            parse_error ();
+            break;
+    }
+    ast = add_AST (ast, 1, ast1);
+    return ast;
+}
+
+// declarator: IDENTIFIER [ "(" ")" ];
+    static struct AST*
+parse_declarator (void) {
+    struct AST *ast, *ast1, *ast2;
+    ast = create_AST ("declarator", 0);
+    ast1 = create_leaf ("IDENTIFIER", tokens[tokens_index].lexeme);
+    consume_token (TK_ID);
+    ast = add_AST (ast, 1, ast1);
+    if (lookahead (1) == '(' && lookahead (2) == ')') {
+        ast2 = create_leaf ("()", "()");
+        consume_token ('(');
+        consume_token (')');
+        ast = add_AST (ast, 1, ast2);
+    }
+    return ast;
+}
+
+// compound_statement: "{" (type_specifier declarator ";" )* ( statement )* "}" ;
+    static struct AST*
+parse_compound_statement (void) {
+    struct AST *ast, *ast1, *ast2, *ast3;
+    ast = create_AST ("compound_statement", 0);
+    consume_token ('{');
+    while (1) {
+        switch (lookahead(1)) {
+            case TK_KW_INT: case TK_KW_CHAR: case TK_KW_VOID: case TK_KW_LONG:
+                ast1 = parse_type_specifier ();
+                ast2 = parse_declarator ();
+                ast3 = create_leaf (";", ";");
+                consume_token(';');
+                ast = add_AST (ast, 3, ast1, ast2, ast3);
+                break;
+            default:
+                goto compound_statement_loop_exit;
+        }
+    }
+compound_statement_loop_exit:
+    while (lookahead(1) != '}') {
+        ast1 = parse_statement ();
+        ast = add_AST (ast, 1, ast1);
+    }
+    consume_token ('}');
+    return ast;
+}
+
+// exp: primary [ "(" ")" ] ;
+    static struct AST*
+parse_exp (void) {
+    struct AST *ast, *ast1, *ast2, *ast3;
+    ast = create_AST ("exp", 0);
+    ast1 = parse_primary ();
+    ast = add_AST (ast, 1, ast1);
+    if (lookahead (1) == '(' && lookahead (2) == ')') {
+        ast2 = create_leaf ("()", "()");
+        consume_token ('(');
+        consume_token (')');
+        ast = add_AST (ast, 1, ast2);
+    }
+    return ast;
+}
+
+// primary: INTEGER | CHARACTER | STRING | INDENTIFIER | "(" exp ")" ;
+    static struct AST*
+parse_primary (void) {
+    struct AST *ast, *ast1, *ast2, *ast3;
+    ast = create_AST ("primary", 0);
+    switch (lookahead (1)) {
+        case TK_INT:
+            ast1 = create_leaf ("INTEGER", tokens[tokens_index].lexeme);
+            consume_token (TK_INT);
+            break;
+        case TK_CHAR:
+            ast1 = create_leaf ("CHARACTER", tokens[tokens_index].lexeme);
+            consume_token (TK_CHAR);
+            break;
+        case TK_STRING:
+            ast1 = create_leaf ("STRING", tokens[tokens_index].lexeme);
+            consume_token (TK_STRING);
+            break;
+        case TK_ID:
+            ast1 = create_leaf ("IDENTIFIER", tokens[tokens_index].lexeme);
+            consume_token (TK_ID);
+            break;
+        case '(':
+            ast1 = create_leaf ("(", "(");
+            consume_token ('(');
+            ast2 = parse_exp ();
+            ast3 = create_leaf (")", ")");
+            consume_token (')');
+            ast = add_AST (ast, 3, ast1, ast2, ast3);
+            return ast;
+        default:
+            parse_error ();
+            break;
+    }
+    ast = add_AST (ast, 1, ast1);
+    return ast;
+}
+
+// statement
+// : IDENTIFIER ":"
+// | compound_statement
+// | "if" "(" exp ")" statement [ "else" statement ]
+// | "while" "(" exp ")" statement
+// | "goto" IDENTIFIER ";"
+// | "return" [ exp ] ";"
+// | [ exp ] ";" ;
+    static struct AST*
+parse_statement (void) {
+    struct AST *ast, *ast1, *ast2, *ast3;
+    ast = create_AST ("statement", 0);
+    if (lookahead (1) == TK_ID && lookahead (2) == ':') {
+        ast1 = create_leaf ("IDENTIFIER", tokens[tokens_index].lexeme);
+        consume_token (TK_ID);
+        ast2 = create_leaf (":", ":");
+        consume_token (':');
+        ast = add_AST (ast, 2, ast1, ast2);
+        return ast;
+    }
+    switch (lookahead (1)) {
+        case '{':
+            ast1 = parse_compound_statement ();
+            ast = add_AST (ast, 1, ast1);
+            break;
+        case TK_KW_IF:
+            ast1 = create_leaf ("if", "if");
+            consume_token (TK_KW_IF);
+            consume_token ('(');
+            ast2 = parse_exp ();
+            consume_token (')');
+            ast3 = parse_statement ();
+            ast = add_AST (ast, 3, ast1, ast2, ast3);
+            if (lookahead (1) == TK_KW_ELSE) {
+                ast1 = create_leaf ("else", "else");
+                consume_token (TK_KW_ELSE);
+                ast2 = parse_statement();
+                ast = add_AST (ast, 2, ast1, ast2);
+            }
+            break;
+        case TK_KW_WHILE:
+            ast1 = create_leaf ("while", "while");
+            consume_token (TK_KW_WHILE);
+            consume_token ('(');
+            ast2 = parse_exp ();
+            consume_token (')');
+            ast3 = parse_statement ();
+            ast = add_AST (ast, 3, ast1, ast2, ast3);
+            break;
+        case TK_KW_GOTO:
+            ast1 = create_leaf ("goto", "goto");
+            consume_token (TK_KW_GOTO);
+            ast2 = create_leaf ("IDENTIFIER", tokens[tokens_index].lexeme);
+            consume_token (TK_ID);
+            ast3 = create_leaf (";", ";");
+            consume_token (';');
+            ast = add_AST (ast, 3, ast1, ast2, ast3);
+            break;
+        case TK_KW_RETURN:
+            ast1 = create_leaf ("return", "return");
+            consume_token (TK_KW_RETURN);
+            if (lookahead (1) != ';') {
+                ast2 = parse_exp ();
+                ast3 = create_leaf (";", ";");
+                consume_token (';');
+                ast = add_AST (ast, 3, ast1, ast2, ast3);
+            }
+            else {
+                ast2 = create_leaf (";", ";");
+                consume_token (';');
+                ast = add_AST (ast, 2, ast1, ast2);
+            }
+            break;
+        case TK_INT: case TK_CHAR: case TK_STRING: case TK_ID: case '(':
+            ast1 = parse_exp ();
+            ast = add_AST (ast, 1, ast1);
+        case ';':
+            ast1 = create_leaf (";", ";");
+            consume_token (';');
+            ast = add_AST (ast, 1, ast1);
+            break;
+        default:
+            parse_error ();
+            break;
+    }
     return ast;
 }
 
@@ -549,9 +773,42 @@ unparse_error (struct AST *ast)
 unparse_AST (struct AST *ast, int depth)
 {
     int i;
+    // translation_unit
     if (!strcmp (ast->ast_type, "translation_unit")) {
-        for (i = 0; i < ast->num_child; i++) {
-            printf_ns (depth, "");
+        for (i = 0; i < ast->num_child; i += 3) {
+            unparse_AST (ast->child [i],   depth);
+            unparse_AST (ast->child [i+1], depth);
+            if (!strcmp (ast->child [i+2]->ast_type, ";")) {
+                printf (";\n");
+            } else if (!strcmp (ast->child [i+2]->ast_type,
+                        "compound_statement")) {
+                printf ("\n");
+                unparse_AST (ast->child [i+2], depth);
+            } else {
+                unparse_error (ast);
+            }
+        }
+
+    // type_specifier
+    } else if (!strcmp (ast->ast_type, "type_specifier")) {
+        if (ast->child[0]->lexeme == NULL) unparse_error (ast);
+        printf_ns (depth, "%s ", ast->child[0]->lexeme);
+
+    // declarator
+    } else if (!strcmp (ast->ast_type, "declarator")) {
+        if (ast->num_child == 1){
+            printf ("%s", ast->child[0]->lexeme);
+        } else if (ast->num_child == 2){
+            printf ("%s()", ast->child[0]->lexeme);
+        } else {
+            unparse_error (ast);
+        }
+
+    // compound_statement
+    } else if (!strcmp (ast->ast_type, "compound_statement")) {
+        printf_ns(depth, "{\n");
+        for (i = 0; i < ast->num_child; i += 3) {
+            if (strcmp(ast->child[i]->ast_type, "type_specifier")) break;
             unparse_AST (ast->child [i],   depth+1);
             unparse_AST (ast->child [i+1], depth+1);
             if (!strcmp (ast->child [i+2]->ast_type, ";")) {
@@ -563,11 +820,75 @@ unparse_AST (struct AST *ast, int depth)
             } else {
                 unparse_error (ast);
             }
-            i+=2;
         }
-        /*
-           ここにコードを書く
-           */
+        for (; i < ast->num_child; ++i) {
+            unparse_AST (ast->child[i], depth+1);
+        }
+        printf_ns(depth, "}\n");
+
+    // exp
+    } else if (!strcmp (ast->ast_type, "exp")) {
+        if (ast->num_child < 1 || ast->num_child > 2) unparse_error (ast);
+        unparse_AST (ast->child[0], depth);
+        if (ast->num_child == 2){
+            printf ("()");
+        }
+
+    // primary
+    } else if (!strcmp (ast->ast_type, "primary")) {
+        if (ast->child == NULL) unparse_error (ast);
+        if (ast->child[0]->ast_type[0] == '(') {
+            printf("(");
+            unparse_AST (ast->child[1], depth);
+            printf(")");
+        } else {
+            printf("%s", ast->child[0]->lexeme);
+        }
+
+    // statement
+    } else if (!strcmp (ast->ast_type, "statement")) {
+        if (ast->num_child == 2 && ast->child[1]->ast_type[0] == ':') {
+            printf("%s:\n", ast->child[0]->lexeme);
+        } else if (!strcmp (ast->child[0]->ast_type, "compound_statement")) {
+            unparse_AST (ast->child[0], depth);
+        } else if (!strcmp (ast->child[0]->ast_type, "if")) {
+            printf_ns (depth, "if (");
+            unparse_AST (ast->child[1], depth);
+            printf (")\n");
+            printf_ns (depth, "{\n");
+            unparse_AST (ast->child[2], depth+1);
+            printf_ns (depth, "}\n");
+            if (ast->num_child > 3){
+                printf_ns (depth, "else\n");
+                printf_ns (depth, "{\n");
+                unparse_AST (ast->child[4], depth+1);
+                printf_ns (depth, "}\n");
+            }
+        } else if (!strcmp (ast->child[0]->ast_type, "while")) {
+            printf_ns (depth, "while (");
+            unparse_AST (ast->child[1], depth);
+            printf (")\n");
+            printf_ns (depth, "{\n");
+            unparse_AST (ast->child[2], depth+1);
+            printf_ns (depth, "}\n");
+        } else if (!strcmp (ast->child[0]->ast_type, "goto")) {
+            printf_ns (depth, "goto %s;\n", ast->child[1]->lexeme);
+        } else if (!strcmp (ast->child[0]->ast_type, "return")) {
+            if (ast->num_child == 2) {
+                printf_ns (depth, "return;\n");
+            }
+            else {
+                printf_ns (depth, "return ");
+                unparse_AST (ast->child[1], depth);
+                printf(";\n");
+            }
+        } else if (!strcmp (ast->child[0]->ast_type, "exp")) {
+            printf_ns (depth, "");
+            unparse_AST (ast->child[0], depth);
+            printf(";\n");
+        } else if (!strcmp (ast->child[0]->ast_type, ";")) {
+            printf_ns (depth, ";\n");
+        }
     } else {
         unparse_error (ast);
     }
@@ -587,9 +908,9 @@ int main (int argc, char *argv[])
     ptr = map_file (argv [1]);
     create_tokens (ptr);
     reset_tokens ();
-    // dump_tokens ();    // 提出時はコメントアウトしておくこと
+    /* dump_tokens ();    // 提出時はコメントアウトしておくこと */
     ast = parse_translation_unit ();
-    // show_AST (ast, 0); // 提出時はコメントアウトしておくこと
+    /* show_AST (ast, 0); // 提出時はコメントアウトしておくこと */
     unparse_AST (ast, 0);
 }
 

@@ -1,6 +1,6 @@
 /*
-  $Id: codegen-skel.c,v 1.1 2016/06/06 05:10:21 gondow Exp gondow $
- */
+   $Id: codegen-skel.c,v 1.1 2016/06/06 05:10:21 gondow Exp gondow $
+   */
 #include <stdio.h>
 #include <stdarg.h>
 #include <assert.h>
@@ -21,7 +21,7 @@ static void codegen_begin_function (struct AST *ast);
 static void codegen_end_function (void);
 /* ---------------------------------------------------------------------- */
 
-static void
+    static void
 emit_code (struct AST *ast, char *fmt, ...)
 {
     va_list  argp;
@@ -36,20 +36,20 @@ emit_code (struct AST *ast, char *fmt, ...)
 #include "vis/emit_code.h"
 #endif
 
-static void
+    static void
 codegen_begin_block (struct AST *ast)
 {
     assert (!strcmp (ast->ast_type, "AST_compound_statement"));
     sym_table.local [++sym_table.local_index] = ast->u.local;
 }
 
-static void
+    static void
 codegen_end_block (void)
 {
     sym_table.local_index--;
 }
 
-static void
+    static void
 codegen_begin_function (struct AST *ast)
 {
     assert(!strcmp (ast->ast_type, "AST_function_definition"));
@@ -60,14 +60,14 @@ codegen_begin_function (struct AST *ast)
     sym_table.string = ast->u.func.string;
 }
 
-static void
+    static void
 codegen_end_function (void)
 {
     /* do nothing */
 }
 
 /* ---------------------------------------------------------------------- */
-void
+    void
 codegen (void)
 {
     /* to be filled */

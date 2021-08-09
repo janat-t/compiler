@@ -1,0 +1,68 @@
+# Compiler Construction Report
+# xcc-small.c
+### 学籍番号 ###
+19B60096
+
+### 氏名 ###
+Taerakul Janat
+
+### Planning and Implementation ###
+I work on the assignment dividing it into two main part: parsing and unparsing.
+
+ ==========> Parsing <==========
+On the first part, I understand that the idea is to create parser function for each nonterminal symbol. If there is any terminal symbol being found in the process, it has to be a leaf in AST.
+
+I started by defining each parsing function and work on them one by one.
+The core idea of parsing is to use lookahead function to see which token is folloing.
+By knowing the next token, I can look at the first, follow table to see which parser should be called next.
+All of the logics are switch and if-else.
+The flow is checking the next token, parse or consume the next token, add children to the AST.
+
+For example, the function "parse_declarator" (line 310) starts from create an AST node (line 313).
+Then, create a leaf for identifier (line 314) and consume the token of that identifier (line 315).
+Finally, add the created leaf to the AST node.
+Moreover, checking if the next two token are "(" and ")" or not.
+If the next two are "(" and ")", then create a leaf containing "()" (I combine two bracket into one leaf) and consume the two tokens.
+Lastly, add the create leaf to the AST node and return the AST node.
+
+While implementing this, I commented out the unparse function in main() and uncommented the dump_tokens() and show_AST() to monitor the process and check whether there is any bug.
+
+After finish implementing every function, I checked the AST with code in test1 folder and some other code I wrote myself. And found no bug or problem.
+
+ =========> Unparsing <=========
+Before start working on the parsing part, I commented out the dump_tokens() and show_AST() and uncommented unparse_AST().
+
+The unparse_AST() function can handle the unparsing with only one function (by calling recursively).
+I implemented each case of AST nodes using if-elseif-else.
+The condition used for if else are strcmp between the ast_type and fixed string of ast_type.
+The function will cope with AST node corresponding to its structure.
+Since the depth is a parameter of unparse_AST, the function also handles the indentation.
+If a child of a node is another AST node, then it is passed into unparse_AST() funciton again.
+
+The thing that I think is the most troublesome is passing depth and printing indent.
+Since some symbol are not at the beginning of a line, it doesn't have to print any indent.
+So I had to carefully look at each case and considere whether it needs indent or not.
+
+### Possible Improvment ###
+
+Firstly, the readability of the code.
+I think that if I separate the code into several files, what will make the code more easy to read.
+I believe that I used consistent indenting and coding style, however, there are still some part that I put too long parameter into a function.
+That could be solved by assign the value into a variable before put it into function.
+
+Second, error throwing.
+The only error that can be reported not is parse error.
+I think It would be better if it could report various error types such as "expected ;" or something like that.
+This can be achieved by introducing more logic and corner case handing.
+
+### Discussion ###
+
+As result, the program that can parse a code is created.
+It has same mechanic with code formatter that we usually use in IDE.
+I found that it is not a very complicated program like I expected.
+The important thing is to be careful about not making small bug to save time.
+
+### Comment ###
+It was a very enjoyable assignemt.
+In the beginning I didn't know what to do or where to start.
+But after I understand all the code given, and start working, I couldn't stop working.

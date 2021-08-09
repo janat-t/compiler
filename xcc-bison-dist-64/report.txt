@@ -1,5 +1,5 @@
 # Compiler Construction Report
-# xcc-small.c
+# xcc-codegen.c
 ### 学籍番号 ###
 19B60096
 

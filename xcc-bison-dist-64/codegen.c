@@ -412,8 +412,6 @@ codegen_exp (struct AST *ast)
     static void
 codegen_stmt (struct AST *ast_stmt)
 {
-    char *label = (char*)malloc(sizeof(char)*64);
-    char *label1 = (char*)malloc(sizeof(char)*64);
     char *L1 = (char*)malloc(sizeof(char)*64);
     char *L2 = (char*)malloc(sizeof(char)*64);
     if (!strcmp (ast_stmt->ast_type, "AST_statement_exp")) {
@@ -506,7 +504,7 @@ codegen_dec (struct AST *ast)
         return;
 
     emit_code (ast, "\t.globl  _%s\n", ast->type->id);
-    emit_code (ast, "\t %s\n", DATA_SECTION);
+    emit_code (ast, "\t%s\n", DATA_SECTION);
     // char型，int型には非対応
     if (ast->type->size == 8) {
         emit_code (ast, "\t.p2align  3\n");
